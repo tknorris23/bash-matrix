@@ -1,0 +1,151 @@
+#!/bin/bash
+##########################
+#	mtricies babey!!
+#	Thomas Kelly Norris
+#	CS344
+#	1/22/2020
+#	this boi be goin
+##########################
+
+## Set all global vars
+row=0
+col=0
+rows=0
+### valid matrix function goes here
+
+dims() {
+	#while loop iterates each new line of the matrix
+	while IFS= read -r line
+	do
+		#Increment rows value
+		rows=`expr $rows + 1`
+	done < $1
+	#For columns, take the first line and increment cols for each character
+	read firstline < $1
+	for i in $firstline
+	do
+		cols=`expr $cols + 1`
+	done
+	#Print out the result
+	echo "$rows $cols"
+}
+
+transpose() {
+	#Set function vars
+	iterator=0
+	current_row=0
+	cols=0
+	rows=0
+	col=0
+	row=0
+	#Get dimensions of matrix
+	dims $1
+	#Now that we know orignial dimensions, we can infer the new dims
+	newcols="$rows"
+	newrows="$cols"
+
+	#Extract matrix into ordered temp file, with no formatting
+	while IFS= read -r line
+	do
+		#for each line, go through each character
+		for i in $line
+		do
+			#add value to temp matrix value file
+			echo "$i" >> "matrix_order$$"
+		done
+	done < $1
+	
+	#Create a file for each row in the matrix
+	while IFS= read -r val
+	do
+		#If current column is less than total # of columns:
+		if [ "$col" -lt "$cols" ]
+		then
+			#Put value into temprow[row#][pid]
+			echo -n "$val " >> "temprow${iterator}_$$"
+			#Increment current column
+			col=`expr $col + 1`
+		#Else if current column is equal to total # of columns:
+		else
+			#Set current column to 1, since this is going to be
+			# the first value of a new row file
+			# and that's what the math needs it to be
+			col=1
+			#Increment iterator
+			iterator=`expr $iterator + 1`
+			#Put value into file, which is a new one since 
+			# iterator just changed
+			echo -n "$val " >> "temprow${iterator}_$$"
+		fi
+	done < "matrix_order$$"
+	#reset iterator and current column
+	iterator=0
+	col=0
+	#This while loop runs as many times as there are values in the matrix
+	#It puts the first value of the first row file in, then the first
+	# value of the second row file in, and so on. It's a lot of iteration
+	# but hey that's how I got it to happen
+	while IFS= read -r val
+	do
+		#If the current column equals the # of columns in the transposed matrix, the value being added to the matrix gets a newline character instead of a tab
+		if [ `expr $col + 1` -eq "$newcols" ]
+		then
+			#For each element in temprow[current column][pid]
+			content=$(<"temprow${col}_$$")
+			for i in $content
+			do
+				#If the iterator is equal to the current row:
+				if [ "$iterator" -eq "$current_row" ]
+				then
+					#Add it's value with a newline to temp_transpose[pid]
+					echo "$i" >> "temp_transpose$$"
+				fi
+				#Increment iterator, implying we're looking at a different row
+				iterator=`expr $iterator + 1`
+			done
+			#once done with for loop, reset iterator
+			iterator=0
+			#Since this is the end of a row, increment current_row
+			current_row=`expr $current_row + 1`
+			#Since it's a new row, current column gets reset
+			col=0
+		#Else, the current column will not be the last one, and the value added to the transposed matrix will get a tab after it
+		else
+			#For each element in temprow[current column][pid]
+			content=$(<"temprow${col}_$$")
+			for i in $content
+			do
+				#If iterator is equal to the current row:
+				if [ "$iterator" -eq "$current_row" ]
+				then
+					#Add value of i to temp_transpose[pid] with a tab instead of a newline
+					echo -en "$i\t" >> "temp_transpose$$"
+				fi
+				#increment iterator
+				iterator=`expr $iterator + 1`
+			done
+			#Done with for loop, reset iterator
+			iterator=0
+			#Still in current_row, increment current column
+			col=`expr $col + 1`
+		fi
+	done < "matrix_order$$"
+	#Display transposed matrix
+	cat "temp_transpose$$"
+	
+	#Remove temp files
+	rm "matrix_order$$"
+	rm "temp_transpose$$"
+	iterator=0
+	for ((i=0; i < $rows; i++))
+	do
+		rm "temprow${iterator}_$$"
+		iterator=`expr $iterator + 1`
+	done
+	iterator=0
+	
+}
+
+
+
+$1 "${@:2}"
