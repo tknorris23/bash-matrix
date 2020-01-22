@@ -14,7 +14,7 @@ current_row=0
 #step 1, get dimensions
 while IFS= read -r line
 do
-	rows=`expr $row + 1`
+	rows=`expr $rows + 1`
 done < $1
 
 read firstline < $1
@@ -24,7 +24,7 @@ do
 done
 
 #since we know the dims, we know what the transposed dims will be
-newcols=`expr $newcols + $rows + 1`
+newcols="$rows"
 newrows="$cols"
 
 #step 2: put each row into it's own file
@@ -41,21 +41,25 @@ do
 done < $1
 
 #This while loop creates a file for every row in the original matrix
-#	with values seperated by newlines
+echo "Beginning row seperation"
+echo "cols: $cols"
 while IFS= read -r val
 do
+	echo "Matrix value in loop: $val"
+	echo "col: $col cols: $cols"
 	#if current column is less than total # of columns:
 	if [ "$col" -lt "$cols" ]
 	then
+		echo "loop says col < cols"
 		#Put value into temprow[row#][pid]
 		echo -n "$val " >> "temprow${iterator}_$$"
 		#iterate current column
 		col=`expr $col + 1`
 	#else if current column is equal to total # of columns
-	elif [ "$col" -eq "$cols" ]
-	then
+	else
+		echo "loop says col = cols"
 		#set current column to 0
-		col=0
+		col=1
 		#iterate current row
 		iterator=`expr $iterator + 1`
 		#put value in new file, since iterator just changed
@@ -67,7 +71,7 @@ iterator=0
 #reset current column
 col=0
 
-echo Starting transposing process!
+echo "###Starting transposing process!###"
 echo "newcols: $newcols"
 #This loop runs as many times as there are values in the matrix
 #If I wrote this right it should only write one value per loop
@@ -130,4 +134,3 @@ content=$(<"temp_trans$$")
 echo "$content"
 
 rm "og_matrix$$"
-rm "temp_trans$$"
