@@ -27,7 +27,7 @@ dims() {
 		cols=`expr $cols + 1`
 	done
 	#Print out the result
-	echo "$rows $cols"
+	echo "$rows $cols" > "temp_result$$"
 }
 
 transpose() {
@@ -130,8 +130,8 @@ transpose() {
 			col=`expr $col + 1`
 		fi
 	done < "matrix_order$$"
-	#Display transposed matrix
-	cat "temp_transpose$$"
+	#Copy transposed matrix to result file
+	cp "temp_transpose$$" "temp_result$$"
 	
 	#Remove temp files
 	rm "matrix_order$$"
@@ -146,6 +146,9 @@ transpose() {
 	
 }
 
-
-
 $1 "${@:2}"
+#Display results
+cat "temp_result$$"
+#Remove results temp file
+rm "temp_result$$"
+
