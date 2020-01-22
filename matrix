@@ -146,6 +146,88 @@ transpose() {
 	
 }
 
+mean() {
+	#Mean gives the mean of each column in a matrix. To more easily sum the values in each column, I transpose the matrix and then seperate the transposed matrix's rows into seperate files. Thus I create a seperate file for each column's values.
+	#Step 1 is to transpose the matrix. The transposed matrix is stored in temp_result[pid].
+	transpose $1
+	
+	#Step 2 is to create a non-delineated file for all of the matrix values.
+	while IFS= read -r line
+	do
+		#For each line, go through each character
+		for i in $line
+		do
+			#Add value to temp matrix value file
+			echo "$i" >> "mean_matrix_order$$"
+		done
+	done < "temp_result$$"
+
+	#Step 3 is to create "column" files from each row, like how it's done in the transpose function.
+	#make sure iterator is 0
+	iterator=0
+	while IFS= read -r val
+	do
+		#If the current column is less than total # of columns:
+		if [ "$col" -lt "$newcols" ]
+		then
+			#Put value into tempcol[col#][pid]
+			echo -n "$val " >> "tempcol${iterator}_$$"
+			#Increment current column
+			col=`expr $col + 1`
+		#Else if current column is equal to total # of columns:
+		else
+			#Set current column to 1, since it's the first
+			# value of a new col file
+			col=1
+			#Increment iterator
+			iterator=`expr $iterator + 1`
+			#Put value into file, which is a new one
+			echo -n "$val " >> "tempcol${iterator}_$$"
+		fi
+	done < "mean_matrix_order$$"
+	#reset iterator and current column
+	iterator=0
+	col=0
+	
+	sum=0
+	mean=0
+	#Step 4 is to get the mean of each file and add it to mean matrix
+	#For each column:
+	for ((i=0; i < $cols; i++))
+	do
+		#Read the contents of the column file
+		read line < "tempcol${i}_$$"
+		#Sum each value together
+		for j in $line
+		do
+			sum=`expr $sum + $j`
+		done
+		#Calculate mean
+		mean=$(( ($sum + ($newcols/2)*( ($sum>0)*2-1)) / $newcols ))
+		#Add mean to mean matrix
+		#If it's the last column, put a newline char at the end.
+		if [ "$i" -eq `expr $cols - 1` ]
+		then
+			echo "${mean}" >> "mean_matrix$$"
+		#If not the last column, put a tab char at the end.
+		else
+			echo -en "${mean}\t" >> "mean_matrix$$"
+		fi
+		#reset sum
+		sum=0
+	done
+
+	#Step 5 is to set the mean matrix to be the result:
+	cp "mean_matrix$$" "temp_result$$"
+
+	#Remove temp files
+	rm "mean_matrix$$" "mean_matrix_order$$"
+	for ((i=0; i < $cols; i++))
+	do
+		rm "tempcol${i}_$$"
+	done	
+}
+
 $1 "${@:2}"
 #Display results
 cat "temp_result$$"
