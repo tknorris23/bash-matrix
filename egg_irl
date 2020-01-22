@@ -1,0 +1,133 @@
+#!/bin/bash
+#Transpose attempt 1!
+#Turn this into proper function later, for now just assume
+#input is coming from $1
+#Set vars
+col=0
+cols=0
+newcols=0
+row=0
+rows=0
+newrows=0
+iterator=0
+current_row=0
+#step 1, get dimensions
+while IFS= read -r line
+do
+	rows=`expr $row + 1`
+done < $1
+
+read firstline < $1
+for i in $firstline
+do
+	cols=`expr $cols + 1`
+done
+
+#since we know the dims, we know what the transposed dims will be
+newcols=`expr $newcols + $rows + 1`
+newrows="$cols"
+
+#step 2: put each row into it's own file
+#This while loop puts all row by row matrix values in order,
+#	seperated by newlines
+while IFS= read -r line
+do
+	#for each character in the line:
+	for i in $line
+	do
+		#add to "og_matrix[pid] file
+		echo "$i" >> "og_matrix$$"
+	done
+done < $1
+
+#This while loop creates a file for every row in the original matrix
+#	with values seperated by newlines
+while IFS= read -r val
+do
+	#if current column is less than total # of columns:
+	if [ "$col" -lt "$cols" ]
+	then
+		#Put value into temprow[row#][pid]
+		echo -n "$val " >> "temprow${iterator}_$$"
+		#iterate current column
+		col=`expr $col + 1`
+	#else if current column is equal to total # of columns
+	elif [ "$col" -eq "$cols" ]
+	then
+		#set current column to 0
+		col=0
+		#iterate current row
+		iterator=`expr $iterator + 1`
+		#put value in new file, since iterator just changed
+		echo -n "$val " >> "temprow${iterator}_$$"
+	fi
+done < "og_matrix$$"
+#reset iterator
+iterator=0
+#reset current column
+col=0
+
+echo Starting transposing process!
+echo "newcols: $newcols"
+#This loop runs as many times as there are values in the matrix
+#If I wrote this right it should only write one value per loop
+while IFS= read -r val
+do
+	echo "col: $col newcols: $newcols"
+	#If the current column equals the # of columns in the transposed matrix
+	if [ `expr $col + 1` -eq "$newcols" ]
+	then
+		#For each element in temprow[current column][pid]
+		content=$(<"temprow${col}_$$")
+		echo "Loop just grabbed: $content"
+		for i in $content
+		do
+			#If the iterator is equal to the current row
+			echo "iterator: $iterator current_row: $current_row i: $i"
+			if [ "$iterator" -eq "$current_row" ]
+			then
+				#Add i's value with a newline to temp_trans[pid]
+				echo "Adding $i to transposed matrix"
+				echo "$i" >> "temp_trans$$"
+			fi
+			#Increment iterator for next check
+			iterator=`expr $iterator + 1`
+		done
+		#once done with for loop, reset iterator
+		iterator=0
+		#Since this is the end of a row, increment current_row
+		current_row=`expr $current_row + 1`
+		echo "currnet_row incremented. Now = $current_row"
+		#Since it's a new row, current column gets reset
+		col=0
+	#Else, the current column will not be the last one
+	else
+		echo "dad said it's my turn to not be equal"
+		#For each element in temprow[current column][pid]
+		content=$(<"temprow${col}_$$")
+		echo "loop just grabbed: $content"
+		for i in $content
+		do
+			echo "iterator: $iterator currnet_row: $current_row i: $i"
+			#if iterator is equal to the current row
+			if [ "$iterator" -eq "$current_row" ]
+			then
+				#Add value of i to temp_trans[pid] with a tab instead of a newline
+				echo "adding $i to transposed matrix"
+				echo -en "$i\t" >> "temp_trans$$"
+			fi
+			#increment iterator
+			iterator=`expr $iterator + 1`
+		done
+		#Done with for loop, reset iterator
+		iterator=0
+		#Still in current_row
+		col=`expr $col + 1`
+	fi
+done < "og_matrix$$"
+
+content=$(<"temp_trans$$")
+echo "$content"
+
+rm "og_matrix$$"
+rm "temp_trans$$"

@@ -1,0 +1,21 @@
+#!/bin/bash
+#create vars
+row=0
+col=0
+#while loop takes input from stdin ($1)
+#-r on read probably makes it read by line
+#IFS means Internal Field Seperator, and is set to a null string
+#Row is added to every line
+while IFS= read -r line
+do
+	echo "$line"
+	row=`expr $row + 1`
+done < $1
+#For columns, just take first line, loop through chars and add to col var
+read firstline < $1
+for i in $firstline
+do
+	col=`expr $col + 1`
+done
+#print out results
+echo "$1 has $row rows and $col columns"
