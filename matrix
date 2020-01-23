@@ -304,9 +304,16 @@ add() {
 	dims $1
 	read dims1 < "temp_result$$"
 	#Reset vars that dims needs
+	firstrows="$rows"
+	firstcols="$firstcols"
 	rows=0
 	cols=0
 	dims $2
+	#check if dimensions are valid
+	if [ "$firstrows" -ne "$rows" ] || [ "$firstcols" -ne "$cols" ]
+	then
+		echo "Error: Mismatched matricies." 1>&2
+		exit 4
 	read dims2 < "temp_result$$"
 	if [ "$dims1" == "$dims2" ];
 	#If they are, continue with operation
@@ -425,6 +432,10 @@ multiply() {
 	rows=0
 	cols=0
 	dims $1
+	if [ "$cols" -ne "$newcols" ]
+	then
+		echo "Error: Mismatched matricies." 1>&2
+		exit 4
 	iterator=0
 	while IFS= read -r val
 	do
