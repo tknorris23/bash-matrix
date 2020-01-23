@@ -228,6 +228,97 @@ mean() {
 	done	
 }
 
+add() {
+	#Set function vars
+	sum=0
+	col=0
+	row=0
+	iterator1=0
+	iterator2=0
+	#Check that inputs are same dimensions
+	dims $1
+	read dims1 < "temp_result$$"
+	#Reset vars that dims needs
+	rows=0
+	cols=0
+	dims $2
+	read dims2 < "temp_result$$"
+	echo "dims1: $dims1 dims2: $dims2"	
+	if [ "$dims1" == "$dims2" ];
+	#If they are, continue with operation
+	then
+		#Step 1 is to put values of both matricies into ordered value files
+		echo "loop started"
+		while IFS= read -r line
+		do
+			#For each line, go through each character
+			for i in $line
+			do
+				#Add value to temp matrix value file
+				echo "$i" >> "add1_$$"
+			done
+		done < $1
+		
+		#Do the same loop for second matrix
+		while IFS= read -r line
+		do
+			#For each line, go through each character
+			for i in $line
+			do
+				#Add value to temp matrix value file
+				echo "$i" >> "add2_$$"
+			done
+		done < $2
+
+		#Now we do a nested loop of each character in add1, followed by going through each character in add2. If their iterators are equal, their values are added and they get sent to the final ordered value file.
+		while IFS= read -r val1
+		do
+			#each character in second matrix
+			while IFS= read -r val2
+			do
+				#If iterators are equal, add values and send to file
+				if [ "$iterator1" -eq "$iterator2" ]
+				then
+					sum=`expr $val1 + $val2`
+					echo "$sum" >> "added$$"
+				fi
+				#Increment add2's iterator
+				iterator2=`expr $iterator2 + 1`
+			done < "add2_$$"
+			#Increment iterator 1
+			iterator1=`expr $iterator1 + 1`
+			#Reset iterator 2
+			iterator2=0
+		done < "add1_$$"
+
+		#Now we have an ordered value file with the added values inside.
+		#The next step is to build the added matrix.
+		while IFS= read -r val
+		do
+			#If the current column equals the # of columns in the matrix, the value being added gets a newline instead of a tab
+			if [ `expr $col + 1` -eq "$cols" ]
+			then
+				echo "$val" >> "added_matrix$$"
+				#Current column gets set back to 0
+				col=0
+			#Else, the current column is not the last columm, and gets a tab after the value
+			else
+				echo -en "$val\t" >> "added_matrix$$"
+				#Increment current column
+				col=`expr $col + 1`
+			fi
+		done < "added$$"
+		#Copy added matrix to result file
+		cp "added_matrix$$" "temp_result$$"
+
+		#Remove temp files
+		rm "add1_$$" "add2_$$" "added_matrix$$" "added$$"
+	else
+		#error return
+		return 1
+	fi	
+}
+
 $1 "${@:2}"
 #Display results
 cat "temp_result$$"
