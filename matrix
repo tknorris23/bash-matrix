@@ -476,6 +476,16 @@ multiply() {
 	done
 }
 
+datafilepath="datafile$$"
+if [ "$#" = "1" ]
+then
+	cat > "$datafilepath"
+elif [ "$#" = "2" ]
+then
+	datafilepath=$2
+fi
+
+
 $1 "${@:2}"
 #Display results
 cat "temp_result$$"
