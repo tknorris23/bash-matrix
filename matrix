@@ -567,5 +567,8 @@ $1 "${@:2}"
 cat "temp_result$$"
 #Remove results temp file
 rm "temp_result$$"
-#Remove data file
-rm "datafile$$"
+#Remove data file if it exists
+if [ -r "datafile$$" ];
+then
+	rm "datafile$$"
+fi
