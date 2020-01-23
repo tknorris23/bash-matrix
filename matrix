@@ -25,6 +25,12 @@ dims() {
 	then
 		set -- "$datafilepath"
 	fi
+	#Check if argument is readable
+	if [ ! -r "$1" ];
+	then
+		echo "Error: Argument is unreadable." 1>&2
+		exit 2
+	fi
 	rows=0
 	cols=0
 	#while loop iterates each new line of the matrix
@@ -54,6 +60,12 @@ transpose() {
 	if [ -z "$1" ];
 	then
 		set -- "$datafilepath"
+	fi
+	#check if argument is readable
+	if [ ! -r "$1" ];
+	then
+		echo "Error: Argument is undreadable." 1>&2
+		exit 2
 	fi
 	#Set function vars
 	iterator=0
@@ -183,6 +195,12 @@ mean() {
 	then
 		set -- "$datafilepath"
 	fi
+	#check if argument is unreadable
+	if [ ! -r "$1" ];
+	then
+		echo "Error: Argument is unreadable." 1>&2
+		exit 2
+	fi
 	#Step 1 is to transpose the matrix. The transposed matrix is stored in temp_result[pid].
 	transpose $1
 	
@@ -269,6 +287,12 @@ add() {
 	then
 		echo "Error: Wrong argument count." 1>&2
 		exit 1
+	fi
+	#Check if arguments are readable
+	if [ ! -r "$1" ] || [ ! -r "$2" ];
+	then
+		echo "Error: An argument is undreadable." 1>&2
+		exit 2
 	fi
 	#Set function vars
 	sum=0
@@ -364,6 +388,12 @@ multiply() {
 	then
 		echo "Error: Wrong argument count." 1>&2
 		exit 1
+	fi
+	#check if arguments are readable
+	if [ ! -r "$1" ] || [ ! -r "$2" ];
+	then
+		echo "Error: An argument is unreadable." 1>&2
+		exit 2
 	fi
 	col=0
 	cols=0
