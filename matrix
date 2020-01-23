@@ -399,8 +399,6 @@ multiply() {
 	col=0
 
 	#Next we set values for some vars needed
-	mxp=`expr "$rows" \* "$newrows"`
-	echo "$mxp"
 	iterator1=0
 	iterator2=0
 	current_col=0
@@ -410,57 +408,71 @@ multiply() {
 	#While count is less than the total number of values the multiplied matrix will have:
 	while [ "$count" -lt "$rows" ]
 	do
-		echo "#### rows: $rows count: $count"
-		#If the current row is less than the # of rows in matrix 1:
-		#if [ "$current_row" -lt "$rows" ]
-		#then
-			#Get the values from current_row's row file
-			read rvals < "temprow${current_row}_$$"
-			echo "rvals: $rvals"
-			#If the current column is less than the # of columns in matrix 2:
-			#if [ "$current_col" -lt "$newrows" ]
-			#then
-			
-			for ((k=0; k < "$newrows"; k++));
+		#Get the values from current_row's row file
+		read rvals < "temprow${current_row}_$$"
+		for ((k=0; k < "$newrows"; k++));
+		do
+			#Get the values from current_col's col file
+			read cvals < "tempcol${current_col}_$$"
+			#For each value in the row file
+			for i in $rvals
 			do
-				echo "### newrows: $newrows k: $k"
-				#Get the values from current_col's col file
-				read cvals < "tempcol${current_col}_$$"
-				echo "#cvals: $cvals"
-				#For each value in the row file
-				for i in $rvals
+				#For each value in the column file
+				for j in $cvals
 				do
-					#For each value in the column file
-					for j in $cvals
-					do
-						#If the iterators are the same:
-						if [ "$iterator1" -eq "$iterator2" ]
-						then
-							#Add the product of i and j to "dot"
-							dot=$(( $dot + ( $i * $j ) ))
-						fi
-					#Increment iterator 2
-					iterator2=`expr $iterator2 + 1`
-					done
-					#Increment iterator 1
-					iterator1=`expr $iterator1 + 1`
-					#reset iterator 2
-					iterator2=0
+					#If the iterators are the same:
+					if [ "$iterator1" -eq "$iterator2" ]
+					then
+						#Add the product of i and j to "dot"
+						dot=$(( $dot + ( $i * $j ) ))
+					fi
+				#Increment iterator 2
+				iterator2=`expr $iterator2 + 1`
 				done
-				#Reset iterator 1
-				iterator1=0
-				#Increment current column
-				current_col=`expr $current_col + 1`
-				#Send the value to the ordered value file
-				echo "$dot" >> "mult_$$"
-				dot=0
+				#Increment iterator 1
+				iterator1=`expr $iterator1 + 1`
+				#reset iterator 2
+				iterator2=0
 			done
-			#fi
-			#Increment current row
-			current_row=`expr $current_row + 1`
-			current_col=0
-		#fi
+			#Reset iterator 1
+			iterator1=0
+			#Increment current column
+			current_col=`expr $current_col + 1`
+			#Send the value to the ordered value file
+			echo "$dot" >> "mult_$$"
+			dot=0
+		done
+		#Increment current row
+		current_row=`expr $current_row + 1`
+		current_col=0
 		count=`expr $count + 1`
+	done
+	#We now have an ordered value file for the multiplied matrix. Next step is to create the matrix file.
+	col=0
+	while IFS= read -r val
+	do
+		if [ `expr $col + 1` -eq "$newrows" ]
+		then
+			echo "$val" >> "mult_matrix_$$"
+			#Current column gets set back to 0
+			col=0
+		else
+			echo -en "$val\t" >> "mult_matrix_$$"
+			#Increment current column
+			col=`expr $col + 1`
+		fi
+	done < "mult_$$"
+	#Copy to result file
+	cp "mult_matrix_$$" "temp_result$$"
+	#Remove temp files
+	rm "mult_$$" "mult_matrix_$$" "ovf1$$" "ovf2$$"
+	for ((i=0; i < $rows; i++))
+	do
+		rm "temprow${i}_$$"
+	done
+	for ((i=0; i < $newrows; i++))
+	do
+		rm "tempcol${i}_$$"
 	done
 }
 
