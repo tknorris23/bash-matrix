@@ -14,6 +14,17 @@ rows=0
 ### valid matrix function goes here
 
 dims() {
+	#check if there is a valid number of arguments
+	if [ "$#" -ne 1 ];
+	then
+		echo "Error: Wrong argument count." 1>&2
+		exit 1
+	fi
+	#check if argument 1 is null
+	if [ -z "$1" ];
+	then
+		set -- "$datafilepath"
+	fi
 	rows=0
 	cols=0
 	#while loop iterates each new line of the matrix
@@ -33,6 +44,17 @@ dims() {
 }
 
 transpose() {
+	#check if there is a valid # of arguments
+	if [ "$#" -ne 1 ];
+	then
+		echo "Error: Wrong argument count." 1>&2
+		exit 1
+	fi
+	#check if argument 1 is null
+	if [ -z "$1" ];
+	then
+		set -- "$datafilepath"
+	fi
 	#Set function vars
 	iterator=0
 	current_row=0
@@ -150,6 +172,17 @@ transpose() {
 
 mean() {
 	#Mean gives the mean of each column in a matrix. To more easily sum the values in each column, I transpose the matrix and then seperate the transposed matrix's rows into seperate files. Thus I create a seperate file for each column's values.
+	#check if argument # is valid
+	if [ "$#" -ne 1 ];
+	then
+		echo "Error: Wrong argument count." 1>&2
+		exit 1
+	fi
+	#Check if argument 1 is null
+	if [ -z "$1" ];
+	then
+		set -- "$datafilepath"
+	fi
 	#Step 1 is to transpose the matrix. The transposed matrix is stored in temp_result[pid].
 	transpose $1
 	
@@ -231,6 +264,12 @@ mean() {
 }
 
 add() {
+	#Check if there is a valid # of arguments
+	if [ "$#" -ne 2 ];
+	then
+		echo "Error: Wrong argument count." 1>&2
+		exit 1
+	fi
 	#Set function vars
 	sum=0
 	col=0
@@ -320,7 +359,12 @@ add() {
 }
 
 multiply() {
-
+	#Check if there is a valid number of arguments
+	if [ "$#" -ne 2 ];
+	then
+		echo "Error: Wrong argument count." 1>&2
+		exit 1
+	fi
 	col=0
 	cols=0
 	m=0
@@ -485,10 +529,13 @@ then
 	datafilepath=$2
 fi
 
-
 $1 "${@:2}"
+
+
+
 #Display results
 cat "temp_result$$"
 #Remove results temp file
 rm "temp_result$$"
-
+#Remove data file
+rm "datafile$$"
