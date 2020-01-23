@@ -14,6 +14,8 @@ rows=0
 ### valid matrix function goes here
 
 dims() {
+	rows=0
+	cols=0
 	#while loop iterates each new line of the matrix
 	while IFS= read -r line
 	do
@@ -243,12 +245,10 @@ add() {
 	cols=0
 	dims $2
 	read dims2 < "temp_result$$"
-	echo "dims1: $dims1 dims2: $dims2"	
 	if [ "$dims1" == "$dims2" ];
 	#If they are, continue with operation
 	then
 		#Step 1 is to put values of both matricies into ordered value files
-		echo "loop started"
 		while IFS= read -r line
 		do
 			#For each line, go through each character
@@ -317,6 +317,151 @@ add() {
 		#error return
 		return 1
 	fi	
+}
+
+multiply() {
+
+	col=0
+	cols=0
+	m=0
+	p=0
+	iterator=0
+	#First step is to make an ordered value file for both matricies
+	while IFS= read -r line
+	do
+		#For each line, go through each character
+		for i in $line
+		do
+			#add value to ordered value file
+			echo "$i" >> "ovf1$$"
+		done
+	done < $1
+	
+	#For the second matrix we first transpose it
+	transpose $2
+	while IFS= read -r line
+	do
+		for i in $line
+		do
+			echo "$i" >> "ovf2$$"
+		done
+	done < "temp_result$$"
+
+	#Step 2 is to create row files for the first matrix:
+	rows=0
+	cols=0
+	dims $1
+	iterator=0
+	while IFS= read -r val
+	do
+		#If current column is less than total # of columns:
+		if [ "$col" -lt "$cols" ]
+		then
+			#Put value into temprow[row#][pid]
+			echo -n "$val " >> "temprow${iterator}_$$"
+			#Increment current column
+			col=`expr $col + 1`
+		#Else if current column is equal to total # of columns:
+		else
+			#Set current column to 1
+			col=1
+			#Increment iterator
+			iterator=`expr $iterator + 1`
+			#Put value into file, which is new because iterator incremented
+			echo -n "$val " >> "temprow${iterator}_$$"
+		fi
+	done < "ovf1$$"
+	#reset iterator and current column
+	iterator=0
+	col=0
+	#Step 3 is to create column files for the second matrix:
+	while IFS= read -r val
+	do
+		#If the current column is less than total # of columns:
+		if [ "$col" -lt "$newcols" ]
+		then
+			#Put value into tempcol[col#][pid]
+			echo -n "$val " >> "tempcol${iterator}_$$"
+			#Increment current column
+			col=`expr $col + 1`
+		#Else if current column is equal to total # of columns:
+		else
+			#Set current column to 1
+			col=1
+			#Increment iterator
+			iterator=`expr $iterator + 1`
+			#Put value into new file
+			echo -n "$val " >> "tempcol${iterator}_$$"
+		fi
+	done < "ovf2$$"
+	#reset iterator and current column
+	iterator=0
+	col=0
+
+	#Next we set values for some vars needed
+	mxp=`expr "$rows" \* "$newrows"`
+	echo "$mxp"
+	iterator1=0
+	iterator2=0
+	current_col=0
+	current_row=0
+	count=0
+	#This loop gets the dot product of rows and columns and sends them to an ordered value file.
+	#While count is less than the total number of values the multiplied matrix will have:
+	while [ "$count" -lt "$rows" ]
+	do
+		echo "#### rows: $rows count: $count"
+		#If the current row is less than the # of rows in matrix 1:
+		#if [ "$current_row" -lt "$rows" ]
+		#then
+			#Get the values from current_row's row file
+			read rvals < "temprow${current_row}_$$"
+			echo "rvals: $rvals"
+			#If the current column is less than the # of columns in matrix 2:
+			#if [ "$current_col" -lt "$newrows" ]
+			#then
+			
+			for ((k=0; k < "$newrows"; k++));
+			do
+				echo "### newrows: $newrows k: $k"
+				#Get the values from current_col's col file
+				read cvals < "tempcol${current_col}_$$"
+				echo "#cvals: $cvals"
+				#For each value in the row file
+				for i in $rvals
+				do
+					#For each value in the column file
+					for j in $cvals
+					do
+						#If the iterators are the same:
+						if [ "$iterator1" -eq "$iterator2" ]
+						then
+							#Add the product of i and j to "dot"
+							dot=$(( $dot + ( $i * $j ) ))
+						fi
+					#Increment iterator 2
+					iterator2=`expr $iterator2 + 1`
+					done
+					#Increment iterator 1
+					iterator1=`expr $iterator1 + 1`
+					#reset iterator 2
+					iterator2=0
+				done
+				#Reset iterator 1
+				iterator1=0
+				#Increment current column
+				current_col=`expr $current_col + 1`
+				#Send the value to the ordered value file
+				echo "$dot" >> "mult_$$"
+				dot=0
+			done
+			#fi
+			#Increment current row
+			current_row=`expr $current_row + 1`
+			current_col=0
+		#fi
+		count=`expr $count + 1`
+	done
 }
 
 $1 "${@:2}"
